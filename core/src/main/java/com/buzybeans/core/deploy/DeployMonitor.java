@@ -2,6 +2,7 @@ package com.buzybeans.core.deploy;
 
 import com.buzybeans.core.util.ZipUtil;
 import com.buzybeans.core.BuzyBeans;
+import com.buzybeans.core.beans.ApplicationArchive;
 import com.buzybeans.core.beans.EJBApplication;
 import com.buzybeans.core.conf.BuzybeansConfig;
 import java.io.File;
@@ -17,7 +18,7 @@ public class DeployMonitor extends Thread {
     private class WarFilter implements FilenameFilter {
         @Override
         public boolean accept(File dir, String name) {
-            if (name.endsWith(".war")) {
+            if (name.endsWith(".war") || name.endsWith(".jar")) {
                 if (new File(dir, name).isDirectory()) {
                     return false;
                 }
@@ -31,6 +32,9 @@ public class DeployMonitor extends Thread {
     
     private Map<String, Long> deployedFiles =
             new HashMap<String, Long>();
+
+    private Map<String, String> deployedApps =
+            new HashMap<String, String>();
 
     public DeployMonitor(final BuzyBeans buzybeans) {
         this.buzybeans = buzybeans;
@@ -94,19 +98,19 @@ public class DeployMonitor extends Thread {
         long start = System.currentTimeMillis();
         File deployed = ZipUtil.inflate(file, work);
         List<File> workFiles = getDeployedFiles(deployed, new ArrayList<File>());
-        EJBApplication application = new EJBApplication();
-        application.getClassLoader().setFiles(workFiles);
-        application.getClassLoader().setBase(deployed);
-        application.getClassLoader().loadDeployedClasses();
-        application.initManageable();
+        ApplicationArchive archive = new ApplicationArchive();
+        archive.setDeployedFiles(workFiles);
+        archive.setDeployBase(deployed);
+        EJBApplication application = new EJBApplication(archive);
         application.start();
-        buzybeans.getApplications().put(deployed.getAbsolutePath(), application);
+        buzybeans.addApplication(application);
         deployedFiles.put(file.getAbsolutePath(), file.lastModified());
+        deployedApps.put(file.getAbsolutePath(), application.getContainerID());
         System.out.println("Application deployed in : " + (System.currentTimeMillis() - start) + " ms");
     }
 
     private void undeploy(String war, File work) {
-        buzybeans.getApplications().get(new File(work, new File(war).getName()).getAbsolutePath()).stop();
+        buzybeans.getApplication(deployedApps.get(war)).stop();
         rm (new File(work, new File(war).getName()));
         deployedFiles.remove(war);
     }

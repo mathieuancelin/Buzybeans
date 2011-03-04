@@ -1,7 +1,6 @@
 package com.buzybeans.core;
 
 import com.buzybeans.core.beans.EJBApplication;
-import com.buzybeans.core.jpa.JPAService;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,7 +12,7 @@ public class BuzyBeans {
 
     private boolean started = false;
 
-    public Map<String, EJBApplication> applications =
+    private Map<String, EJBApplication> applications =
             new HashMap<String, EJBApplication>();
 
     public void start() {
@@ -31,7 +30,11 @@ public class BuzyBeans {
         return !started;
     }
 
-    public Map<String, EJBApplication> getApplications() {
-        return applications;
+    public void addApplication(EJBApplication application) {
+        applications.put(application.getContainerID(), application);
+    }
+
+    public EJBApplication getApplication(String id) {
+        return applications.get(id);
     }
 }

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import javax.ejb.Singleton;
 import javax.ejb.Stateful;
 import javax.ejb.Stateless;
@@ -21,15 +22,26 @@ public class EJBApplication {
 
     private JPAService jpaService;
 
-    public EJBApplication() {
-        classLoader = new BuzybeansClassloader(getClass().getClassLoader());
-        beans = new ArrayList<Bean<?>>();
-        entities = new ArrayList<Class<?>>();
-        jpaService = new JPAService(classLoader);
+    private ApplicationArchive archive;
+
+    private String containerID;
+
+    public EJBApplication(ApplicationArchive archive) {
+        this.classLoader = new BuzybeansClassloader(this, getClass().getClassLoader());
+        this.beans = new ArrayList<Bean<?>>();
+        this.entities = new ArrayList<Class<?>>();
+        this.archive = archive;
+        this.archive.init(classLoader);
+        this.jpaService = new JPAService(classLoader);
+        this.containerID = UUID.randomUUID().toString();
     }
 
+    public String getContainerID() {
+        return containerID;
+    }
 
     public void start() {
+        initManageable();
         jpaService.setEntities(entities);
         jpaService.start();
         for (Bean<?> bean : beans) {
@@ -43,7 +55,7 @@ public class EJBApplication {
         for (Bean<?> bean : beans) {
             bean.stop();
         }
-        jpaService.stop();
+        //jpaService.stop();
     }
 
     public Class<?> getClass(String name) throws ClassNotFoundException {
@@ -58,11 +70,15 @@ public class EJBApplication {
         return jpaService;
     }
 
-    public Collection<Class<?>> getApplicationClasses() {
-        return Collections.unmodifiableList(classLoader.getClasses());
+    public ApplicationArchive getArchive() {
+        return archive;
     }
 
-    public void initManageable() {
+    public Collection<Class<?>> getApplicationClasses() {
+        return Collections.unmodifiableCollection(archive.getClasses());
+    }
+
+    private void initManageable() {
         Collection<Class<?>> classes = getApplicationClasses();
         for (Class<?> clazz : classes) {
             if (clazz.isAnnotationPresent(Stateful.class)) {
