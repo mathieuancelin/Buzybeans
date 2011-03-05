@@ -153,11 +153,13 @@ public class ApplicationArchive implements Archive {
 
     private void loadDeployedClasses(ClassLoader loader) {
         for (String name : classPath.keySet()) {
-            try {
-                Class<?> clazz = loader.loadClass(name);
-                addClass(clazz);
-            } catch (ClassNotFoundException ex) {
-                ex.printStackTrace();
+            if (!(classPath.get(name) instanceof FromJarFileReader)) {
+                try {
+                    Class<?> clazz = loader.loadClass(name);
+                    addClass(clazz);
+                } catch (ClassNotFoundException ex) {
+                    ex.printStackTrace();
+                }
             }
         }
     }
