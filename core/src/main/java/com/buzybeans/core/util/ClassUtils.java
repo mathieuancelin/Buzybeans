@@ -44,6 +44,7 @@ public class ClassUtils {
                     URL jarUrl = new URL("jar:file:" + jar.getAbsolutePath() + "!/" + entry.getName());
                     readJarInJar(jarUrl, classPath);
                 } else {
+                    // TODO : list files
                     System.out.println("found : " + entry.getName());
                 }
             }

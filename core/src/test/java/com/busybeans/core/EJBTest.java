@@ -1,7 +1,8 @@
 package com.busybeans.core;
 
-import com.buzybeans.core.beans.ApplicationArchive;
-import com.buzybeans.core.beans.EJBApplication;
+import com.buzybeans.core.BuzyBeans;
+import com.buzybeans.core.api.Application;
+import com.buzybeans.core.api.Archive;
 import java.io.File;
 import org.junit.Assert;
 import org.junit.Test;
@@ -13,13 +14,13 @@ public class EJBTest {
     @Test
     public void testApp() {
         actions = 0;
-        ApplicationArchive archive = new ApplicationArchive();
+        Archive archive = BuzyBeans.newArchive();
         archive
                 .addClass(SingletonBean.class)
                 .addClass(Person.class)
                 .addFile(new File("src/test/resources/persistence.xml")
-                         , "META-INF/peristence.xml");
-        EJBApplication application = new EJBApplication(archive);
+                         , "META-INF/persistence.xml");
+        Application application = BuzyBeans.newApplication(archive);
         application.start();
         application.stop();
         Assert.assertTrue(actions == 2);

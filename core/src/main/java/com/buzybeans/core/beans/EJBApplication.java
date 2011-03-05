@@ -1,5 +1,6 @@
 package com.buzybeans.core.beans;
 
+import com.buzybeans.core.api.Application;
 import com.buzybeans.core.classloading.BuzybeansClassloader;
 import com.buzybeans.core.jpa.JPAService;
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ import javax.ejb.Stateful;
 import javax.ejb.Stateless;
 import javax.persistence.Entity;
 
-public class EJBApplication {
+public class EJBApplication implements Application {
 
     private BuzybeansClassloader classLoader;
 
@@ -36,10 +37,12 @@ public class EJBApplication {
         this.containerID = UUID.randomUUID().toString();
     }
 
+    @Override
     public String getContainerID() {
         return containerID;
     }
 
+    @Override
     public void start() {
         initManageable();
         jpaService.setEntities(entities);
@@ -51,11 +54,17 @@ public class EJBApplication {
         }
     }
 
+    @Override
     public void stop() {
         for (Bean<?> bean : beans) {
             bean.stop();
         }
-        //jpaService.stop();
+        jpaService.stop();
+    }
+
+    @Override
+    public <T> T getInstance(Class<T> clazz) {
+        return null;
     }
 
     public Class<?> getClass(String name) throws ClassNotFoundException {

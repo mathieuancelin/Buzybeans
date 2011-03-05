@@ -1,5 +1,6 @@
 package com.buzybeans.core.beans;
 
+import com.buzybeans.core.api.Archive;
 import com.buzybeans.core.util.ClassUtils;
 import com.buzybeans.core.util.ClassUtils.FromFileReader;
 import com.buzybeans.core.util.ClassUtils.FromReader;
@@ -14,7 +15,7 @@ import java.util.Map;
  *
  * @author mathieuancelin
  */
-public class ApplicationArchive {
+public class ApplicationArchive implements Archive {
 
     private File deployBase;
     private List<File> deployedFiles = new ArrayList<File>();
@@ -86,13 +87,14 @@ public class ApplicationArchive {
                 String name = ClassUtils.filenameToClassname(
                         file.getAbsolutePath().replace(deployBase.getAbsolutePath(), "").replace("/WEB-INF/classes/", ""));
                 classPath.put(name, new FromFileReader(file));
-            }
-            if (file.getName().endsWith(".jar")) {
+            } else if (file.getName().endsWith(".jar")) {
                 try {
                     classPath.putAll(ClassUtils.loadFromJar(file));
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
+            } else {
+                // TODO : list files
             }
         }
     }

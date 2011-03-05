@@ -1,5 +1,8 @@
 package com.buzybeans.core;
 
+import com.buzybeans.core.api.Application;
+import com.buzybeans.core.api.Archive;
+import com.buzybeans.core.beans.ApplicationArchive;
 import com.buzybeans.core.beans.EJBApplication;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,5 +39,13 @@ public class BuzyBeans {
 
     public EJBApplication getApplication(String id) {
         return applications.get(id);
+    }
+
+    public static Archive newArchive() {
+        return new ApplicationArchive();
+    }
+
+    public static Application newApplication(Archive archive) {
+        return new EJBApplication((ApplicationArchive) archive);
     }
 }
