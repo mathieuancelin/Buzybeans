@@ -1,5 +1,7 @@
 package com.buzybeans.core.beans;
 
+import com.buzybeans.core.injection.ClassHandler;
+import com.buzybeans.core.jpa.JPAService;
 import com.buzybeans.core.proxy.DynamicProxy;
 import com.buzybeans.core.proxy.ProxyHelper;
 import com.buzybeans.core.util.Pool;
@@ -46,6 +48,7 @@ public class Bean<T> {
 
     private ReadWriteLock lock;
 
+    private ClassHandler classHandler;
 
     public static <R> Bean<R> newBean(Type type, Class<R> clazz, EJBApplication app) {
         return new Bean<R>(type, clazz, app);
@@ -65,6 +68,7 @@ public class Bean<T> {
         proxy = DynamicProxy.getDynamicProxy(clazz, this);
         proxyfiedInstance = (T) ProxyHelper.createProxy(proxy);
         lock = new ReentrantReadWriteLock();
+        classHandler = new ClassHandler();
     }
 
     public Type getType() {
@@ -80,6 +84,7 @@ public class Bean<T> {
             for (Method m : methods) {
                 if (m.isAnnotationPresent(PostConstruct.class)
                         && m.getParameterTypes().length == 0) {
+                    getInstance(false); // TODO : fixe ugly workaround
                     m.invoke(getProxiedInstance());
                 }
             }
@@ -106,9 +111,17 @@ public class Bean<T> {
     }
 
     public T getInstance() {
+        return getInstance(true);
+    }
+
+    private T getInstance(boolean start) {
         if (singletonInstance == null) {
             try {
                 singletonInstance = clazz.newInstance();
+                classHandler.classInjection(singletonInstance, clazz, new ArrayList<Method>(), app);
+                if (start) {
+                    start();
+                }
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -126,13 +139,13 @@ public class Bean<T> {
         Thread.currentThread().setContextClassLoader(app.getClassLoader());
         Lock writeLock = this.lock.writeLock();
         writeLock.lock();
-        app.getJpaService().startTx();
+        //app.getJpaService().startTx();
         try {
             Object ret = method.invoke(instance, args);
-            app.getJpaService().stopTx(false);
+            //app.getJpaService().stopTx(false);
             return ret;
         } catch (Exception e) {
-            app.getJpaService().stopTx(true);
+            //app.getJpaService().stopTx(true);
             throw e;
         } finally {
             ungetInstance(instance);

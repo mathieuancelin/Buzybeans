@@ -79,6 +79,10 @@ public class EJBApplication implements Application {
         return archive.getResources(name);
     }
 
+    public Bean<?> getBean(Class<?> bean) {
+        return beans.get(bean);
+    }
+
     public Class<?> getClass(String name) throws ClassNotFoundException {
         return classLoader.loadClass(name);
     }
