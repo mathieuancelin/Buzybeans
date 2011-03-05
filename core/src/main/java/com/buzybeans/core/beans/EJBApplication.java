@@ -6,7 +6,8 @@ import com.buzybeans.core.jpa.JPAService;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import javax.ejb.Singleton;
 import javax.ejb.Stateful;
@@ -17,7 +18,7 @@ public class EJBApplication implements Application {
 
     private BuzybeansClassloader classLoader;
 
-    private List<Bean<?>> beans;
+    private Map<Class<?>, Bean<?>> beans;
 
     private Collection<Class<?>> entities;
 
@@ -29,7 +30,7 @@ public class EJBApplication implements Application {
 
     public EJBApplication(ApplicationArchive archive) {
         this.classLoader = new BuzybeansClassloader(this, getClass().getClassLoader());
-        this.beans = new ArrayList<Bean<?>>();
+        this.beans = new HashMap<Class<?>, Bean<?>>();
         this.entities = new ArrayList<Class<?>>();
         this.archive = archive;
         this.archive.init(classLoader);
@@ -47,7 +48,7 @@ public class EJBApplication implements Application {
         initManageable();
         jpaService.setEntities(entities);
         jpaService.start();
-        for (Bean<?> bean : beans) {
+        for (Bean<?> bean : beans.values()) {
             if (bean.isStartable()) {
                 bean.start();
             }
@@ -56,7 +57,7 @@ public class EJBApplication implements Application {
 
     @Override
     public void stop() {
-        for (Bean<?> bean : beans) {
+        for (Bean<?> bean : beans.values()) {
             bean.stop();
         }
         jpaService.stop();
@@ -64,7 +65,7 @@ public class EJBApplication implements Application {
 
     @Override
     public <T> T getInstance(Class<T> clazz) {
-        return null;
+        return (T) beans.get(clazz).getProxiedInstance();
     }
 
     public Class<?> getClass(String name) throws ClassNotFoundException {
@@ -91,13 +92,13 @@ public class EJBApplication implements Application {
         Collection<Class<?>> classes = getApplicationClasses();
         for (Class<?> clazz : classes) {
             if (clazz.isAnnotationPresent(Stateful.class)) {
-                beans.add(Bean.newBean(Bean.Type.STATEFUL, clazz, this));
+                beans.put(clazz, Bean.newBean(Bean.Type.STATEFUL, clazz, this));
             }
             if (clazz.isAnnotationPresent(Stateless.class)) {
-                beans.add(Bean.newBean(Bean.Type.STATELESS, clazz, this));
+                beans.put(clazz, Bean.newBean(Bean.Type.STATELESS, clazz, this));
             }
             if (clazz.isAnnotationPresent(Singleton.class)) {
-                beans.add(Bean.newBean(Bean.Type.SINGLETON, clazz, this));
+                beans.put(clazz, Bean.newBean(Bean.Type.SINGLETON, clazz, this));
             }
             if (clazz.isAnnotationPresent(Entity.class)) {
                 entities.add(clazz);
