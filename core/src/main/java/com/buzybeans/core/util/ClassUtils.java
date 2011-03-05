@@ -45,7 +45,8 @@ public class ClassUtils {
                     readJarInJar(jarUrl, classPath);
                 } else {
                     // TODO : list files
-                    System.out.println("found : " + entry.getName());
+                    URL jarUrl = new URL("jar:file:" + jar.getAbsolutePath() + "!/" + entry.getName());
+                    classPath.put(entry.getName(), new FromJarFileReader(jarUrl, entry.getName()));
                 }
             }
         }
@@ -59,7 +60,7 @@ public class ClassUtils {
             if (ze.getName().endsWith(".jar")) {
                 URL jarUrl = new URL(url.toString() + "!/" + ze.getName());
                 readJarInJar(jarUrl, classPath);
-            } else {
+            } else if(ze.getName().endsWith(".class")) {
                 String name = filenameToClassname(ze.getName());
                 byte[] array = new byte[1024];
                 ByteArrayOutputStream out = new ByteArrayOutputStream(array.length);
@@ -70,6 +71,9 @@ public class ClassUtils {
                 }
                 byte[] bytes = out.toByteArray();
                 classPath.put(name, new FromJarinJarReader(url, name, bytes));
+            } else {
+                URL jarUrl = new URL(url.toString() + "!/" + ze.getName());
+                classPath.put(ze.getName(), new FromJarFileReader(jarUrl, ze.getName()));
             }
             zin.closeEntry();
         }
@@ -167,6 +171,30 @@ public class ClassUtils {
         @Override
         public byte[] read() throws IOException {
             return bytes;
+        }
+    }
+
+    public static class FromJarFileReader implements FromReader {
+
+        private final URL url;
+        private final String name;
+
+        public FromJarFileReader(URL url, String name) {
+            this.url = url;
+            this.name = name;
+        }
+
+        public URL getUrl() {
+            return url;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public byte[] read() throws IOException {
+            return null;
         }
     }
 }

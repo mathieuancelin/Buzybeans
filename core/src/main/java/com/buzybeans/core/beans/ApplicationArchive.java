@@ -1,10 +1,14 @@
 package com.buzybeans.core.beans;
 
 import com.buzybeans.core.api.Archive;
+import com.buzybeans.core.conf.BuzybeansConfig;
 import com.buzybeans.core.util.ClassUtils;
 import com.buzybeans.core.util.ClassUtils.FromFileReader;
+import com.buzybeans.core.util.ClassUtils.FromJarFileReader;
 import com.buzybeans.core.util.ClassUtils.FromReader;
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -21,13 +25,15 @@ public class ApplicationArchive implements Archive {
     private List<File> deployedFiles = new ArrayList<File>();
     private Map<String, FromReader> classPath = new HashMap<String, FromReader>();
     private Map<String, Class<?>> classes = new HashMap<String, Class<?>>();
-    private Map<String, File> resourceFiles = new HashMap<String, File>();
+    private Map<String, List<URL>> resourceFiles = new HashMap<String, List<URL>>();
 
+    @Override
     public ApplicationArchive addClass(Class<?> clazz) {
         classes.put(clazz.getName(), clazz);
         return this;
     }
 
+    @Override
     public ApplicationArchive addClasses(Class<?>... addclasses) {
         for (Class<?> clazz : addclasses) {
             classes.put(clazz.getName(), clazz);
@@ -35,20 +41,35 @@ public class ApplicationArchive implements Archive {
         return this;
     }
 
+    @Override
     public ApplicationArchive addFile(File file) {
-        resourceFiles.put(file.getName(), file);
-        return this;
-    }
-
-    public ApplicationArchive addFile(File... files) {
-        for (File file : files) {
-            resourceFiles.put(file.getName(), file);
+        try {
+            addURL(file.getName(), file.toURI().toURL());
+        } catch (MalformedURLException ex) {
+            BuzybeansConfig.logger.error(null, ex);
         }
         return this;
     }
 
+    @Override
+    public ApplicationArchive addFile(File... files) {
+        for (File file : files) {
+            try {
+                addURL(file.getName(), file.toURI().toURL());
+            } catch (MalformedURLException ex) {
+                BuzybeansConfig.logger.error(null, ex);
+            }
+        }
+        return this;
+    }
+
+    @Override
     public ApplicationArchive addFile(File file, String name) {
-        resourceFiles.put(name, file);
+        try {
+            addURL(name, file.toURI().toURL());
+        } catch (MalformedURLException ex) {
+            BuzybeansConfig.logger.error(null, ex);
+        }
         return this;
     }
 
@@ -56,7 +77,19 @@ public class ApplicationArchive implements Archive {
         return classes.values();
     }
 
-    public File getResource(String name) {
+    public URL getResource(String name) {
+        Collection<URL> urls = getResources(name);
+        if(urls.isEmpty()) {
+            return null;
+        } else {
+            return urls.toArray(new URL[] {})[0];
+        }
+    }
+
+    public Collection<URL> getResources(String name) {
+        if (!resourceFiles.containsKey(name)) {
+            return null;
+        }
         return resourceFiles.get(name);
     }
 
@@ -66,7 +99,18 @@ public class ApplicationArchive implements Archive {
 
     void init(ClassLoader loader) {
         listDeployedClasses();
+        populateClasspathFiles();
         loadDeployedClasses(loader);
+        for (Class<?> clazz : classes.values()) {
+            System.out.println("class : " + clazz.getName());
+        }
+        System.out.println("");
+        for (Collection<URL> urls : resourceFiles.values()) {
+            for (URL url : urls) {
+                System.out.println("file : " + url.toString());
+            }
+        }
+        System.out.println("");
     }
 
     public void setDeployedFiles(List<File> files) {
@@ -79,6 +123,13 @@ public class ApplicationArchive implements Archive {
 
     public Map<String, FromReader> getClassPath() {
         return classPath;
+    }
+
+    private void addURL(String key, URL url) {
+        if (!resourceFiles.containsKey(key)) {
+            resourceFiles.put(key, new ArrayList<URL>());
+        }
+        resourceFiles.get(key).add(url);
     }
 
     private void listDeployedClasses() {
@@ -95,17 +146,27 @@ public class ApplicationArchive implements Archive {
                 }
             } else {
                 // TODO : list files
+                addFile(file);
             }
         }
     }
 
-    public void loadDeployedClasses(ClassLoader loader) {
+    private void loadDeployedClasses(ClassLoader loader) {
         for (String name : classPath.keySet()) {
             try {
                 Class<?> clazz = loader.loadClass(name);
                 addClass(clazz);
             } catch (ClassNotFoundException ex) {
                 ex.printStackTrace();
+            }
+        }
+    }
+
+    private void populateClasspathFiles() {
+        for (FromReader reader : classPath.values()) {
+            if (reader instanceof FromJarFileReader) {
+                FromJarFileReader fileReader = (FromJarFileReader) reader;
+                addURL(fileReader.getName(), fileReader.getUrl());
             }
         }
     }

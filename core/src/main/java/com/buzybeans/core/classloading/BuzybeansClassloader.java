@@ -2,10 +2,10 @@ package com.buzybeans.core.classloading;
 
 import com.buzybeans.core.beans.EJBApplication;
 import com.buzybeans.core.util.ClassUtils.FromReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Enumeration;
 
 /**
@@ -24,7 +24,7 @@ public class BuzybeansClassloader extends ClassLoader {
     @Override
     public URL getResource(String name) {
         try {
-            return app.getArchive().getResource(name).toURI().toURL();
+            return app.getArchive().getResource(name);
         } catch (Exception ex) {
             return getParent().getResource(name);
         }
@@ -33,7 +33,7 @@ public class BuzybeansClassloader extends ClassLoader {
     @Override
     public InputStream getResourceAsStream(String name) {
         try {
-            return new FileInputStream(app.getArchive().getResource(name));
+            return app.getArchive().getResource(name).openStream();
         } catch (Exception ex) {
             return getParent().getResourceAsStream(name);
         }
@@ -41,7 +41,11 @@ public class BuzybeansClassloader extends ClassLoader {
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
-        return super.getResources(name);
+        try {
+            return Collections.enumeration(app.getArchive().getResources(name));
+        } catch (Exception ex) {
+            return getParent().getResources(name);
+        }
     }
 
     @Override
