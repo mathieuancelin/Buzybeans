@@ -1,5 +1,8 @@
 package com.buzybeans.core.api;
 
+import java.net.URL;
+import java.util.Collection;
+
 /**
  *
  * @author mathieuancelin
@@ -13,5 +16,9 @@ public interface Application {
     void start();
 
     void stop();
+
+    URL getResource(String name);
+
+    Collection<URL> getResources(String name);
 
 }

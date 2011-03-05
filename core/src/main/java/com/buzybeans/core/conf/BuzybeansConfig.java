@@ -34,7 +34,7 @@ public class BuzybeansConfig {
         initLogger();
     }
 
-    private static void initLogger() {
+    public static void initLogger() {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         lc.stop(); lc.reset();
         ch.qos.logback.classic.Logger backLogger = (ch.qos.logback.classic.Logger) logger;

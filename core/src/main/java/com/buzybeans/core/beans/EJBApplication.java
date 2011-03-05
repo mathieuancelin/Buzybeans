@@ -3,6 +3,7 @@ package com.buzybeans.core.beans;
 import com.buzybeans.core.api.Application;
 import com.buzybeans.core.classloading.BuzybeansClassloader;
 import com.buzybeans.core.jpa.JPAService;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,6 +67,16 @@ public class EJBApplication implements Application {
     @Override
     public <T> T getInstance(Class<T> clazz) {
         return (T) beans.get(clazz).getProxiedInstance();
+    }
+
+    @Override
+    public URL getResource(String name) {
+        return archive.getResource(name);
+    }
+
+    @Override
+    public Collection<URL> getResources(String name) {
+        return archive.getResources(name);
     }
 
     public Class<?> getClass(String name) throws ClassNotFoundException {
